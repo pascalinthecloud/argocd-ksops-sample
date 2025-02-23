@@ -1,0 +1,65 @@
+global:
+  # -- Default domain used by all components
+  ## Used for ingresses, certificates, SSO, notifications, etc.
+  domain: argo.sicherge.cloud
+
+configs:
+  params:
+    server.insecure: true
+  cm:
+    kustomize.buildOptions: --enable-alpha-plugins --enable-exec
+    exec.enabled: true
+    accounts.argouser: apiKey, login
+  # Creating user argouser with admin role
+  rbac:
+    policy.csv: |
+      g, argouser, role:admin
+
+server:
+  ingress:
+    enabled: true
+
+repoServer:
+  initContainers:
+  - name: install-ksops
+    image: viaductoss/ksops:v4.3.3
+    command: [ "/bin/sh", "-c" ]
+    args:
+    - echo "Installing KSOPS..."; mv ksops /custom-tools/; mv kustomize /custom-tools/; echo "Done.";
+    volumeMounts:
+    - mountPath: /custom-tools
+      name: custom-tools
+  - name: import-gpg-key
+    image: argoproj/argocd:v2.6.15
+    command: [ "gpg", "--import", "/sops-gpg/sops.asc" ]
+    env:
+    - name: GNUPGHOME
+      value: /gnupg-home/.gnupg
+    volumeMounts:
+    - mountPath: /sops-gpg
+      name: sops-gpg
+    - mountPath: /gnupg-home
+      name: gnupg-home
+  volumes:
+  - name: custom-tools
+    emptyDir: {}
+  - name: sops-gpg
+    secret:
+      secretName: sops-gpg
+  - name: gnupg-home
+    emptyDir: {}
+  volumeMounts:
+  - mountPath: /home/argocd/.gnupg
+    name: gnupg-home
+    subPath: .gnupg
+  - mountPath: /usr/local/bin/kustomize
+    name: custom-tools
+    subPath: kustomize
+  - mountPath: /.config/kustomize/plugin/viaduct.ai/v1/ksops/ksops
+    name: custom-tools
+    subPath: ksops
+  env:
+  - name: XDG_CONFIG_HOME
+    value: /.config
+  - name: GNUPGHOME
+    value: /home/argocd/.gnupg
