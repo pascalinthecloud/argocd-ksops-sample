@@ -1,0 +1,18 @@
+resources:
+- ../../base
+
+patches:
+- target:
+    group: networking.k8s.io
+    version: v1
+    kind: Ingress
+    name: keycloak
+  path: patches/ingress.yaml
+- path: configmaps/keycloak.yaml
+  target:
+    version: v1
+    kind: ConfigMap
+    name: keycloak-configmap
+
+generators:
+- secrets_generator.yaml

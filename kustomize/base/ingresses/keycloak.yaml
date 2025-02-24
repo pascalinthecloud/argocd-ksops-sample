@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak
+  annotations:
+    cert-manager.io/cluster-issuer: "cloudflare-issuer"
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+
+spec:
+  rules:
+  - host: place.holder.de
+    http:
+      paths:
+      - backend:
+          service:
+            port:
+              number: 80
+            name: keycloak
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - place.holder.de
+    secretName: keycloak-tls
+  ingressClassName: nginx
